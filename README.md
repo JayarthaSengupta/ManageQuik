@@ -1,118 +1,316 @@
-# Outset — Gaming Management System
+# ManageQuik — Management & Performance Tracking System
 
 ![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?logo=mysql&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-Data%20Processing-150458?logo=pandas)
-![Matplotlib](https://img.shields.io/badge/Matplotlib-Visualization-11557C)
+![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?logo=mysql&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-2.x-150458?logo=pandas&logoColor=white)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-3.x-11557C?logo=python&logoColor=white)
+![python--dotenv](https://img.shields.io/badge/python--dotenv-1.x-ECD53F?logo=dotenv&logoColor=black)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
-A Python-based command-line management system for **Outset**, an esports organization. The application combines a MySQL member database with CSV-based game performance data to provide role-based access for Managers, In-Game Leaders (IGLs), and Gamers.
+**ManageQuik** is a Python-based management and performance-tracking system designed to simplify managerial workflows, review team-member performance, and provide structured insights that can help individuals understand their performance and improve going forward.
+
+The current implementation uses an **esports organization as its domain-specific use case**, combining a MySQL-backed member database with CSV-based performance data for different games. The underlying system, however, is designed from a **management and performance-analysis perspective rather than a gaming-specific perspective**.
+
+ManageQuik provides role-based access for Managers, In-Game Leaders (IGLs), and Gamers, allowing managers to oversee organizational data and team performance while enabling individuals to review their own performance records.
+
+Version **2.0.0** significantly restructures the original application by separating database operations, authentication, validation, game-data management, and visualization into dedicated modules. It also introduces configurable environment-based settings, persistent performance-data updates, improved validation, stronger error handling, and fixes several correctness issues present in v1.0.0.
+
+---
 
 ## Table of Contents
 
+- [Overview](#overview)
 - [Features](#features)
+- [What's New in v2.0.0](#whats-new-in-v200)
+- [Current Use Case](#current-use-case)
 - [Tech Stack](#tech-stack)
-- [System Overview](#system-overview)
+- [System Architecture](#system-architecture)
 - [Supported Games](#supported-games)
-- [Setup](#setup-one-time-only)
-- [Running the Project](#running-the-project)
+- [Setup](#setup)
+- [Environment Configuration](#environment-configuration)
 - [Database Setup](#database-setup)
+- [Running the Project](#running-the-project)
 - [User Roles](#user-roles)
-- [Game Data](#game-data)
-- [Project Structure](#project-structure)
+- [Authentication](#authentication)
+- [Performance Data](#performance-data)
 - [Application Flow](#application-flow)
 - [Data Visualization](#data-visualization)
-- [Security Notes](#security-notes)
+- [Project Structure](#project-structure)
+- [Error Handling](#error-handling)
+- [Security](#security)
 - [Known Limitations](#known-limitations)
 - [Future Improvements](#future-improvements)
+- [Version History](#version-history)
 - [What I Learned](#what-i-learned)
 - [License](#license)
 
 ---
 
-## Features
+## Overview
 
-- MySQL-backed Outset member database
-- Username and six-digit User ID authentication
-- Role-based access for Managers, IGLs, and Gamers
-- Manager access to the complete Outset member database
-- Add new members to the organization
-- Validation for usernames and User IDs
-- Support for Valorant, CS:GO, and BGMI
-- View game performance data in table format
-- Visualize rounds won and lost using Matplotlib
-- Add new game-performance records
-- CSV-based game data management
-- Interactive command-line menus
-- Basic input validation and error handling through menu loops
+ManageQuik is built around a simple management workflow:
 
-## Tech Stack
+```
+                    ┌─────────────────────┐
+                    │      Manager       │
+                    └──────────┬──────────┘
+                               │
+                  ┌────────────┴────────────┐
+                  ▼                         ▼
+        ┌──────────────────┐       ┌──────────────────┐
+        │ Manage People    │       │ Review Performance│
+        │ & Organizational │       │ & Work Data       │
+        │ Information      │       │                   │
+        └────────┬─────────┘       └─────────┬────────┘
+                 │                           │
+                 └─────────────┬─────────────┘
+                               ▼
+                    ┌─────────────────────┐
+                    │ Performance Data    │
+                    │ Analysis & Reports  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Individual Insights │
+                    │ & Improvement       │
+                    └─────────────────────┘
+```
 
-- Python 3.x
-- MySQL
-- MySQL Connector/Python
-- Pandas
-- Matplotlib
-- CSV
+The system is intended to support three interconnected activities:
+
+### 1. Manage
+
+Managers can maintain organizational/member information and oversee the people they are responsible for.
+
+### 2. Review
+
+Performance data can be collected, viewed, and visualized to help managers evaluate work and identify areas that require attention.
+
+### 3. Improve
+
+Individuals can use their performance information to understand their results and identify how they can improve over time.
+
+This makes the application more than a simple database or statistics viewer. Its broader purpose is to connect **management, performance review, and improvement** within a single workflow.
 
 ---
 
-## System Overview
+## Features
 
-The application acts as a small management system for an esports organization.
+### Management
 
-Member information is stored in a MySQL database, while individual game statistics are maintained in CSV datasets. After logging in, the application identifies the user's designation and provides the functionality associated with that role.
+- MySQL-backed member database
+- Manager access to organizational member records
+- Add new members
+- Role-based access control
+- Centralized member-data management
 
-```text
-                    ┌─────────────────────┐
-                    │       User          │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │  Username + User ID │
-                    │    Authentication   │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   MySQL Member DB   │
-                    │    (emp table)      │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────┴──────────┐
-                    ▼                     ▼
-             ┌─────────────┐       ┌─────────────┐
-             │   Manager   │       │ IGL / Gamer │
-             └──────┬──────┘       └──────┬──────┘
-                    │                     │
-          ┌─────────┴─────────┐           │
-          ▼                   ▼           ▼
-   Member Database       Game Data    Game Data
-   View / Add             View/Edit    View/Edit
-          │                   │           │
-          └───────────────────┴───────────┘
-                              │
-                              ▼
-                    ┌─────────────────────┐
-                    │ Pandas + Matplotlib │
-                    │ Table / Graph View  │
-                    └─────────────────────┘
+### Performance Tracking
+
+- Track individual/team performance
+- Store performance records in structured CSV datasets
+- Add new performance records
+- Persist performance-data changes
+- View historical performance data
+
+### Performance Review
+
+- Tabular performance-data review
+- Graphical performance visualization
+- Compare rounds won and lost
+- Review historical performance trends
+- Provide a foundation for identifying areas of improvement
+
+### Application Architecture
+
+- Modular Python architecture
+- Dedicated database layer
+- Dedicated authentication layer
+- Centralized validation utilities
+- Dedicated performance-data management
+- Dedicated visualization module
+- Environment-based configuration
+- Configurable data directories
+
+### Reliability
+
+- Input validation
+- User ID validation
+- Date validation
+- CSV file validation
+- CSV schema validation
+- Database error handling
+- Transaction rollback
+- Explicit database connection cleanup
+- Global exception handling
+
+---
+
+## What's New in v2.0.0
+
+Version 2.0.0 is a substantial architectural and reliability upgrade over v1.0.0.
+
+| Area | v1.0.0 | v2.0.0 |
+| --- | --- | --- |
+| Architecture | Monolithic | Modular |
+| Database credentials | Hardcoded | Environment variables |
+| File paths | Absolute Windows paths | Configurable paths |
+| Performance-data updates | In-memory only | Persisted |
+| Pandas append | `DataFrame.append()` | `pd.concat()` |
+| Input validation | Scattered | Centralized |
+| User ID validation | Basic | Six-digit validation |
+| Username matching | Partial | Exact, case-insensitive |
+| User ID matching | Containment | Exact comparison |
+| Game selection | Repeated logic | Central mapping |
+| Database operations | Embedded in menus | Dedicated module |
+| Authentication | Embedded in main | Dedicated module |
+| Data processing | Repeated logic | Dedicated module |
+| Visualization | Embedded in main | Dedicated module |
+| Database errors | Limited | Error handling + rollback |
+| CSV errors | Limited | File/schema validation |
+| Connection cleanup | Not explicit | Explicit cleanup |
+| Configuration | Machine-specific | Portable/configurable |
+| Secret handling | Hardcoded | `.env` + `.gitignore` |
+| Maintainability | Low | Significantly improved |
+
+---
+
+## Current Use Case
+
+ManageQuik is currently implemented around an **esports management scenario**.
+
+The application models an organization where:
+
+- A Manager oversees members
+- IGLs lead teams
+- Gamers participate in games
+- Game performance is recorded
+- Managers can review performance data
+- Individuals can access their associated performance data
+- Performance can be visualized to identify trends
+
+The gaming domain was selected as a practical implementation scenario because performance is naturally measurable through structured metrics.
+
+For the current implementation, those metrics include:
+
 ```
+Games Won
+Games Lost
+Rounds Won
+Rounds Lost
+```
+
+The domain can therefore be viewed as:
+
+```
+ManageQuik
+    │
+    ▼
+Management Framework
+    │
+    ▼
+Performance Tracking
+    │
+    ▼
+Current Domain: Esports
+```
+
+The same underlying management approach could be adapted to other environments where people perform measurable work, such as:
+
+```
+Sales Teams
+Customer Support Teams
+Project Teams
+Operations Teams
+Training Programs
+Sports Organizations
+Educational Teams
+```
+
+The current gaming implementation is therefore a **use case of the management system rather than the definition of the product itself**.
+
+---
+
+## Tech Stack
+
+- **Python 3.x** — Application development
+- **MySQL** — Member and organizational data
+- **MySQL Connector/Python** — Database connectivity
+- **Pandas** — Performance-data processing
+- **Matplotlib** — Performance visualization
+- **python-dotenv** — Environment-based configuration
+- **CSV** — Performance-data storage
+
+---
+
+## System Architecture
+
+Version 2.0.0 separates the application according to responsibility.
+
+```
+                         ┌──────────────────┐
+                         │     main.py      │
+                         │ Application Flow │
+                         └────────┬─────────┘
+                                  │
+              ┌───────────────────┼───────────────────┐
+              │                   │                   │
+              ▼                   ▼                   ▼
+     ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+     │ authentication  │ │    database     │ │   validation    │
+     │      .py        │ │      .py        │ │      .py        │
+     └─────────────────┘ └────────┬────────┘ └─────────────────┘
+                                  │
+                                  ▼
+                           ┌──────────────┐
+                           │    MySQL     │
+                           │ Member Data  │
+                           └──────────────┘
+
+              ┌───────────────────┴───────────────────┐
+              │                                       │
+              ▼                                       ▼
+     ┌─────────────────┐                     ┌─────────────────┐
+     │   game_data.py  │                     │ visualization.py│
+     │                 │                     │                 │
+     │ Load / Add /    │                     │ Tables / Graphs │
+     │ Save Performance│                     │                 │
+     │ Data            │                     │                 │
+     └────────┬────────┘                     └─────────────────┘
+              │
+              ▼
+        ┌─────────────┐
+        │    data/    │
+        │ CSV Files   │
+        └─────────────┘
+```
+
+### Module Responsibilities
+
+| Module | Responsibility |
+| --- | --- |
+| `main.py` | Application entry point, menus, and control flow |
+| `database.py` | MySQL connection and member database operations |
+| `authentication.py` | Authentication and role identification |
+| `validation.py` | Reusable input and data validation |
+| `game_data.py` | Loading, validating, modifying, and saving performance data |
+| `visualization.py` | Performance tables and graphical visualizations |
+
+This separation allows the management logic, data layer, validation, and visualization components to evolve independently.
 
 ---
 
 ## Supported Games
 
-The application currently supports three games:
+The current esports implementation supports:
 
 | Game | Dataset |
-|---|---|
+| --- | --- |
 | Valorant | `ValorantData.csv` |
-| CS:GO | `CSGOData.csv` |
+| CS | `CSGOData.csv` |
 | BGMI | `BGMIData.csv` |
 
-Game performance records contain:
+Each dataset currently contains:
 
 - Date
 - Games Won
@@ -120,95 +318,69 @@ Game performance records contain:
 - Rounds Won
 - Rounds Lost
 
+These metrics represent the current implementation of ManageQuik's broader performance-tracking concept.
+
 ---
 
-## Setup (one time only)
+## Setup
 
 ### Prerequisites
-
-Make sure the following are installed:
 
 - Python 3.x
 - MySQL Server
 - pip
 
-Install the required Python packages:
+Install the required dependencies:
 
-```bash
-pip install mysql-connector-python pandas matplotlib
+```
+pip install mysql-connector-python pandas matplotlib python-dotenv
 ```
 
 ---
 
-## Running the Project
+## Environment Configuration
 
-### 1. Start MySQL
+Database credentials and local configuration are externalized through environment variables.
 
-Make sure the MySQL server is running and the `outset` database has been created.
+Create a `.env` file in the project root:
 
-### 2. Configure the CSV files
-
-The current implementation expects the game datasets at:
-
-```text
-C:\IP_Project_File\
+```
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=outset
+GAME_DATA_DIR=data
 ```
 
-with the following files:
+### Configuration Variables
 
-```text
-C:\IP_Project_File\ValorantData.csv
-C:\IP_Project_File\CSGOData.csv
-C:\IP_Project_File\BGMIData.csv
-```
+| Variable | Description | Example |
+| --- | --- | --- |
+| `DB_HOST` | MySQL server host | `localhost` |
+| `DB_USER` | MySQL username | `root` |
+| `DB_PASSWORD` | MySQL password | `your_password` |
+| `DB_NAME` | MySQL database | `outset` |
+| `GAME_DATA_DIR` | Performance-data directory | `data` |
 
-If you move the project to another computer, update these paths in the Python source.
-
-### 3. Run the application
-
-```bash
-python <filename>.py
-```
-
-The application will prompt for:
-
-```text
-ENTER USERNAME -
-ENTER USER ID -
-```
-
-After successful authentication, the appropriate role-based menu will be displayed.
+The `.env` file should never be committed to version control.
 
 ---
 
 ## Database Setup
 
-The application connects to a MySQL database named:
+The current implementation uses a MySQL database named:
 
-```text
+```
 outset
 ```
 
-and reads member information from the:
+Member information is stored in:
 
-```text
+```
 emp
 ```
 
-table.
-
-The application expects member records containing the following fields:
-
-```text
-name
-designation
-dob
-username
-user_id
-game_name
-```
-
-A compatible database can be initialized with:
+A compatible database can be initialized using:
 
 ```sql
 CREATE DATABASE outset;
@@ -225,94 +397,167 @@ CREATE TABLE emp (
 );
 ```
 
-The Python application currently connects using credentials defined directly in the source code. Update them to match your local MySQL installation.
+Expected member fields:
 
-> **Security:** Do not commit real database credentials to a public repository.
+```
+name
+designation
+dob
+username
+user_id
+game_name
+```
+
+---
+
+## Running the Project
+
+Ensure MySQL is running and the database is configured.
+
+Place the performance datasets inside the configured data directory:
+
+```
+data/
+├── ValorantData.csv
+├── CSGOData.csv
+└── BGMIData.csv
+```
+
+Then run:
+
+```
+python main.py
+```
+
+The application prompts for:
+
+```
+ENTER USERNAME -
+ENTER USER ID -
+```
+
+After successful authentication, the user is directed to the appropriate role-based interface.
 
 ---
 
 ## User Roles
 
-The application supports three designations.
-
-| Role | Capabilities |
-|---|---|
-| **Manager** | View/edit game data and access the Outset member database |
-| **IGL** | View/edit the game data associated with the IGL |
-| **Gamer** | View the game data associated with the Gamer |
+| Role | Primary Responsibility |
+| --- | --- |
+| **Manager** | Manage organizational information and review performance |
+| **IGL** | Lead a team and maintain associated performance data |
+| **Gamer** | Review associated performance data |
 
 ### Manager
 
-Managers have the highest level of access in the application.
+Managers can:
 
-They can:
-
-- Access game datasets
-- View game data
-- Add game-performance records
-- View the Outset member database
-- Add new members to the database
+- View organizational member information
+- Add new members
+- Access game-performance datasets
+- Review performance data
+- Add performance records
+- Visualize performance information
 
 ### IGL
 
-An IGL can access the game associated with their member record and:
+IGLs can:
 
-- View game statistics
-- Add new game-performance records
+- Access their associated game
+- Review performance statistics
+- Add performance records
 
 ### Gamer
 
-A Gamer can access the game associated with their member record and view its performance data.
+Gamers can:
+
+- Access their associated game
+- Review performance data
+
+The role model reflects the current esports implementation while providing a foundation for broader managerial permission systems.
 
 ---
 
 ## Authentication
 
-The application uses two pieces of information for login:
+Authentication currently uses:
 
-```text
+```
 Username
 User ID
 ```
 
-The User ID is expected to contain exactly six digits.
+The User ID must contain exactly six digits.
 
-The system:
+The authentication process is:
 
-1. Loads the member database from MySQL.
-2. Searches for the supplied username.
-3. Validates the corresponding User ID.
-4. Identifies the user's designation.
-5. Opens the appropriate role-specific interface.
+```
+Username + User ID
+        │
+        ▼
+Load member records
+        │
+        ▼
+Exact username comparison
+        │
+        ▼
+Exact User ID comparison
+        │
+        ▼
+Identify designation
+        │
+        ▼
+Open role-specific interface
+```
 
-Supported designations are case-sensitive:
+Username matching is exact and case-insensitive.
 
-```text
-Manager
-IGL
-Gamer
+For example:
+
+```
+jay
+```
+
+will match:
+
+```
+jay
+```
+
+but not:
+
+```
+jayartha
+jay123
 ```
 
 ---
 
-## Game Data
+## Performance Data
 
-Game datasets are loaded using Pandas.
+Performance data is currently stored as CSV files and processed using Pandas.
 
-For example:
+The data-management workflow is:
 
-```python
-d3 = pd.read_csv("C:\\IP_Project_File\\ValorantData.csv")
-d3 = d3.dropna()
+```
+CSV
+ ↓
+Load
+ ↓
+Validate
+ ↓
+Review / Modify
+ ↓
+Save
+ ↓
+Updated Performance Data
 ```
 
-The same approach is used for the CS:GO and BGMI datasets.
-
-### Adding a Record
+### Adding Performance Records
 
 Authorized users can enter:
 
-```text
+```
 Date
 Games Won
 Games Lost
@@ -320,203 +565,376 @@ Rounds Won
 Rounds Lost
 ```
 
-The information is added to the active Pandas DataFrame during the current program session.
+Version 2.0.0 persists these changes back to the appropriate CSV file.
+
+This means:
+
+```
+Session 1
+   ↓
+Record Added
+   ↓
+CSV Updated
+   ↓
+Application Closed
+
+Session 2
+   ↓
+Updated Record Still Available
+```
+
+### Data Validation
+
+The application validates:
+
+- File existence
+- Required CSV columns
+- Dates
+- Numeric input
+- Menu selections
+- User IDs
+- Non-empty text fields
 
 ---
 
 ## Application Flow
 
-```text
-Start
-  │
-  ▼
-Connect to MySQL
-  │
-  ▼
-Load emp table
-  │
-  ▼
-Enter Username + User ID
-  │
-  ▼
-Validate Login
-  │
-  ├── Invalid Username ──► Re-enter Details
-  │
-  ├── Invalid User ID ───► Re-enter Details
-  │
-  ▼
-Identify Designation
-  │
-  ├── Manager
-  │      ├── Game Data
-  │      │     ├── View
-  │      │     └── Edit
-  │      │
-  │      └── Member Database
-  │            ├── View
-  │            └── Add Member
-  │
-  ├── IGL
-  │      └── Associated Game
-  │            ├── View
-  │            └── Edit
-  │
-  └── Gamer
-         └── Associated Game
-               └── View
+```
+                         START
+                           │
+                           ▼
+                  Load Configuration
+                           │
+                           ▼
+                    Connect to MySQL
+                           │
+                           ▼
+                    Load Member Data
+                           │
+                           ▼
+                   Authenticate User
+                           │
+                           ▼
+                    Identify Role
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+       Manager            IGL             Gamer
+          │                │                │
+          ▼                ▼                ▼
+    Manage Members    Review/Edit      Review
+          │            Performance     Performance
+          │                │                │
+          └────────────────┼────────────────┘
+                           │
+                           ▼
+                  Performance Analysis
+                           │
+                           ▼
+                    Table / Graph
+                           │
+                           ▼
+                  Close DB Connection
+                           │
+                           ▼
+                          END
 ```
 
 ---
 
 ## Data Visualization
 
-The `view()` function provides two ways to inspect game statistics:
+Performance visualization is isolated in:
 
-### Table Format
+```
+visualization.py
+```
 
-Prints the complete Pandas DataFrame to the terminal.
+The module provides graphical analysis of performance data.
 
-### Graph Format
-
-Matplotlib is used to visualize:
+Current visualizations include:
 
 - Rounds Won
 - Rounds Lost
-- Date
+- Date-based performance trends
 
-The graph includes:
+Graphs include:
 
 - Date on the X-axis
 - Number of rounds on the Y-axis
-- Grid
 - Legend
+- Grid
 - `Rounds Won & Lost` title
+- Rotated date labels
+- Automatic layout adjustment
 
-The visualization is generated directly from the currently loaded game DataFrame.
+The visualization layer is intentionally separate from the management and data-processing logic, allowing additional analytical features to be introduced without restructuring the rest of the application.
 
 ---
 
 ## Project Structure
 
-A recommended repository structure is:
-
-```text
-Outset/
+```
+ManageQuik/
+│
 ├── README.md
 ├── LICENSE
+├── .gitignore
+├── .env
+│
 ├── main.py
+├── database.py
+├── authentication.py
+├── validation.py
+├── game_data.py
+├── visualization.py
+│
 ├── data/
 │   ├── ValorantData.csv
 │   ├── CSGOData.csv
 │   └── BGMIData.csv
+│
 └── docs/
     └── screenshots/
 ```
 
-The original implementation currently references the CSV files through an absolute Windows path rather than the relative `data/` structure shown above.
+### Architecture at a Glance
+
+```
+main.py
+│
+├── authentication.py
+│   └── Authentication + Role Identification
+│
+├── database.py
+│   └── MySQL Operations
+│
+├── validation.py
+│   └── Input + Data Validation
+│
+├── game_data.py
+│   └── Performance Data Management
+│
+└── visualization.py
+    └── Performance Visualization
+```
 
 ---
 
-## Security Notes
+## Error Handling
 
-This project is primarily an educational implementation and is **not production-ready authentication software**.
+Version 2.0.0 introduces structured error handling throughout the application.
 
-Important considerations:
+### Input
 
-- MySQL credentials are currently stored directly in the source code.
-- Authentication uses a username and User ID rather than a password.
-- CSV files are accessed directly from the local filesystem.
-- There is no dedicated authentication/session framework.
-- Database permissions should be restricted in a production deployment.
-- User input validation should be strengthened before production use.
+Reusable validation handles:
 
-For example, credentials should not be hard-coded like:
+- Integer input
+- User IDs
+- Menu choices
+- Dates
+- Yes/No responses
+- Non-empty strings
 
-```python
-passwd="1234"
+### Database
+
+Database operations use error handling and transaction rollback:
+
+```
+Execute
+  │
+  ├── Success ──► Commit
+  │
+  └── Failure ──► Rollback
 ```
 
-Instead, production implementations should use environment variables or a secure secrets-management system.
+### CSV
+
+Game-data files are validated for:
+
+- Existence
+- Required schema
+- Expected columns
+
+### Application
+
+Unexpected application-level exceptions are handled at the main application boundary.
+
+`KeyboardInterrupt` is also handled to provide cleaner command-line termination.
+
+---
+
+## Security
+
+ManageQuik is an educational management application and is **not intended to be production-grade authentication software**.
+
+### v2.0.0 Security Improvements
+
+Database credentials are no longer hardcoded into Python source files.
+
+Configuration is supplied through:
+
+```
+.env
+```
+
+and should be excluded from version control using:
+
+```
+.gitignore
+```
+
+### Remaining Security Limitations
+
+The current authentication system uses:
+
+```
+Username + User ID
+```
+
+rather than password-based authentication.
+
+A production implementation should additionally consider:
+
+- Secure password hashing
+- Session management
+- Granular authorization
+- Restricted database permissions
+- Secure secrets management
+- Audit logging
+- Access monitoring
 
 ---
 
 ## Known Limitations
 
-The current source contains several implementation details that should be addressed before production use.
+ManageQuik v2.0.0 remains a command-line educational implementation.
 
-### CSV Changes Are Not Persisted
+### Domain-Specific Data Model
 
-Game records are added to the Pandas DataFrame in memory. The current implementation does not write the modified DataFrame back to its CSV file.
+The current implementation is built around esports metrics. Adapting it to other management environments would require changes to the performance-data model.
 
-As a result, newly added game records may be lost when the application exits.
+### CSV-Based Performance Storage
 
-### Absolute File Paths
-
-The application uses paths such as:
-
-```text
-C:\IP_Project_File\ValorantData.csv
-```
-
-This makes the project dependent on a particular Windows directory structure.
-
-### Deprecated Pandas API
-
-The source uses:
-
-```python
-DataFrame.append()
-```
-
-This method has been removed from current Pandas versions. A modern implementation should use `pd.concat()` or another supported approach.
-
-### Input Handling
-
-Several values are directly converted using `int()`. Non-numeric input can therefore raise an exception instead of being handled gracefully.
+Performance information is currently stored in CSV files rather than a centralized database.
 
 ### Authentication
 
-The current authentication mechanism is based on username and User ID matching and should not be considered secure authentication for a real-world application.
+Authentication remains based on username and User ID rather than a full credential and session-management system.
 
-### Source Compatibility
+### Console Interface
 
-The supplied implementation contains some code-level issues that may require correction when running it with current Python/Pandas/Matplotlib versions. This README documents the intended functionality of the project rather than silently modifying the original implementation.
+The application currently operates through a command-line interface.
+
+### Automated Testing
+
+A comprehensive automated test suite has not yet been implemented.
 
 ---
 
 ## Future Improvements
 
-- Move database credentials to environment variables
-- Replace absolute file paths with configurable relative paths
-- Persist game-data changes back to CSV
-- Consider migrating game statistics into MySQL
-- Add password-based authentication with secure password hashing
-- Add stronger input validation and exception handling
-- Refactor repeated role/game logic into reusable functions
-- Separate database, authentication, data-processing, and visualization modules
-- Add automated tests
-- Add logging for administrative operations
-- Build a graphical or web-based interface
-- Introduce more granular role and permission management
-- Improve portability across operating systems
+Future development can focus on expanding ManageQuik from the current esports implementation into a more general management platform.
+
+Potential improvements include:
+
+- Migrate performance data from CSV to MySQL
+- Introduce configurable performance metrics
+- Support multiple management domains
+- Add password-based authentication
+- Introduce secure password hashing
+- Implement session management
+- Add granular role and permission management
+- Add automated unit and integration tests
+- Introduce structured logging and audit trails
+- Add performance reports
+- Add individual improvement recommendations
+- Add manager dashboards
+- Add historical performance comparisons
+- Add team-level analytics
+- Build a graphical interface
+- Build a web-based management dashboard
+- Add multi-user support
+- Add automated reporting and exports
+- Containerize the application using Docker
+
+---
+
+## Version History
+
+### v2.0.0 — Modularization & Reliability Upgrade
+
+Major architectural and functional upgrade.
+
+Key changes:
+
+- Renamed and positioned the application as **ManageQuik**
+- Refactored the monolithic application into dedicated modules
+- Separated management, database, authentication, validation, data-processing, and visualization responsibilities
+- Moved database credentials to environment variables
+- Added configurable performance-data paths
+- Added `.env` and `.gitignore` support
+- Added persistent performance-data updates
+- Replaced deprecated `DataFrame.append()` usage
+- Added centralized input validation
+- Added six-digit User ID validation
+- Added date validation
+- Added exact username matching
+- Added exact User ID matching
+- Added CSV file and schema validation
+- Added database transaction rollback
+- Added explicit database connection cleanup
+- Added global exception handling
+- Corrected CS and BGMI game-detection logic
+- Separated visualization functionality
+- Reduced duplicated role and game logic
+- Improved portability and maintainability
+
+### v1.0.0 — Initial Release
+
+The original implementation established the core management workflow:
+
+- MySQL member management
+- Username/User ID authentication
+- Manager, IGL, and Gamer roles
+- CSV-based performance data
+- Performance visualization
+- Member creation
+- Command-line management menus
+
+v2.0.0 builds upon that foundation by restructuring the implementation and improving reliability, portability, and maintainability.
 
 ---
 
 ## What I Learned
 
-- Connecting Python applications to MySQL databases
-- Performing SQL operations from Python
-- Working with Pandas DataFrames
-- Reading and processing CSV datasets
-- Implementing role-based application flows
-- Validating user input
-- Building interactive command-line applications
-- Visualizing data using Matplotlib
-- Combining database management with data analysis in a single application
+Developing ManageQuik provided practical experience with:
+
+- Designing management-oriented software
+- Translating a real-world management workflow into software
+- Python application architecture
+- Modular programming
+- Separation of concerns
+- MySQL database integration
+- SQL operations from Python
+- Database transactions and rollback
+- Environment-based configuration
+- Secure handling of local configuration
+- Pandas DataFrame manipulation
+- CSV data processing and persistence
+- Input and data validation
+- Role-based application design
+- Error and exception handling
+- File-system path management
+- Performance visualization with Matplotlib
+- Refactoring a monolithic application into maintainable modules
+- Designing software around a real-world use case
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License**. See the `LICENSE` file for details.
+This project is licensed under the **MIT License**.
+
+See the `LICENSE` file for the complete license text.
